@@ -1,0 +1,64 @@
+---
+title: "Access Portal Data"
+author: "John Fay"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Overview
+This document demonstrates how data published to ArcGIS Online/Portal can be accessed by R code.Access is done through the R {arcgis} package: https://www.esri.com/arcgis-blog/products/developers/announcements/announcing-arcgis-r-package/
+
+```{r workspace setup, echo=FALSE}
+#Import packages
+library(tidyverse)
+library(arcgis)
+```
+
+# Data used in this exercise
+We will be accessing data shared publicly on the ACERCAR GIS Server: <https://faybox.rc.duke.edu/server/rest/services/Hosted/Malaria_Surveillance_Data_view/FeatureServer>
+
+Spectifically, we'll be using the LDAS Hydrometeorological data:
+<https://faybox.rc.duke.edu/server/rest/services/Hosted/LDAS_Hydrometeorological_Data_view/FeatureServer>
+
+
+```{r Fetch the data}
+#Link to the portal via a feature service (fs)
+furl <- "https://faybox.rc.duke.edu/server/rest/services/Hosted/LDAS_Hydrometeorological_Data_view/FeatureServer"
+
+#The `arc_open()` command connects to the data, creating a "Feature Service"
+fs <- arc_open(furl)
+fs
+
+#Retrieve the table associated with the feature service, using the `get_layer()` function
+ftable <- get_layer(fs, id=0)
+list_fields(ftable)
+
+#Get the data as a dataframe using the `arc_select()` function
+surveillance_data <- arc_select(
+  ftable,
+)
+
+```
+
+```{r Fetch data condensed}
+#All the above condensed as a sequence of piped commands
+surveillance_data2 <- furl %>% 
+  arc_open() %>% 
+  get_layer(id=0) %>% 
+  arc_select()
+
+```
+
+# Some visualizations
+```{r}
+surveillance_data2 %>%
+  filter(ubigeo=='160101') %>% 
+  group_by(week) %>% 
+  summarize(
+    avg_rain = mean(rainfall_mm)
+  ) %>% 
+  ggplot() +
+  geom_line(aes(x=week,y=avg_rain))
+```
+
